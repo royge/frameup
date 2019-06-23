@@ -1,10 +1,8 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"github.com/muesli/smartcrop"
-	"github.com/muesli/smartcrop/nfnt"
-	"github.com/nfnt/resize"
 	"image"
 	"image/draw"
 	"image/jpeg"
@@ -12,6 +10,20 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/muesli/smartcrop"
+	"github.com/muesli/smartcrop/nfnt"
+	"github.com/nfnt/resize"
+)
+
+var (
+	overlay = "./assets/overlay.png"
+	delay   = 100 * time.Millisecond
 )
 
 func writeImage(img image.Image, name string) error {
@@ -63,7 +75,7 @@ func addFrame(r, o io.Reader, w io.Writer) error {
 	return nil
 }
 
-func crop(f io.Reader, width, height int, name string) error {
+func resizeAndCrop(f io.Reader, width, height int, name string) error {
 	img, _, err := image.Decode(f)
 	if err != nil {
 		return fmt.Errorf("failed to decode image, %v", err)
@@ -87,35 +99,129 @@ func crop(f io.Reader, width, height int, name string) error {
 	return writeImage(croppedImg, name)
 }
 
-var (
-	overlay = "./assets/overlay.png"
-	sample  = "./test/dummy.jpg"
-	framed  = "./test/framed.jpg"
-	raw     = "./test/raw.jpg"
-	cropped = "./test/cropped.jpg"
-)
+func scan(wg *sync.WaitGroup, dir string, c chan string, exts string) error {
+	err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() && strings.ContainsAny(info.Name(), exts) {
+			wg.Add(1)
+			c <- path.Join(dir, info.Name())
+			time.Sleep(delay)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func crop(wg *sync.WaitGroup, s string, dir string) error {
+	defer wg.Done()
+	if s != "" {
+		r, err := os.Open(s)
+		if err != nil {
+			return fmt.Errorf("unable to open raw image, %v", err)
+		}
+		defer r.Close()
+
+		name := filepath.Base(s)
+
+		p := path.Join(
+			dir,
+			name,
+		)
+
+		if err := resizeAndCrop(r, 1200, 1800, p); err != nil {
+			return fmt.Errorf("unable to crop image, %v", err)
+		}
+	}
+
+	return nil
+}
+
+func frame(wg *sync.WaitGroup, s string, dir string) error {
+	defer wg.Done()
+	if s != "" {
+		f, err := os.Open(s)
+		if err != nil {
+			return fmt.Errorf("unable to open raw image, %v", err)
+		}
+		defer f.Close()
+
+		name := filepath.Base(s)
+
+		p := path.Join(
+			dir,
+			name,
+		)
+
+		o, err := os.Open(overlay)
+		if err != nil {
+			return fmt.Errorf("unable to open overlay image, %v", err)
+		}
+		defer o.Close()
+
+		w, err := os.Create(p)
+		if err != nil {
+			return fmt.Errorf("unable to create watermarked file, %v", err)
+		}
+		defer w.Close()
+
+		err = addFrame(f, o, w)
+		if err != nil {
+			return fmt.Errorf("expected no error, got %v", err)
+		}
+	}
+
+	return nil
+}
 
 func main() {
-	f, err := os.Open(sample)
-	if err != nil {
-		log.Fatalf("unable to open test image, %v", err)
-	}
-	defer f.Close()
+	s := flag.String("s", "", "Source directory. (Ex. -s=/Users/roye/Desktop/mypics)")
+	o := flag.String("o", "", "Output directory. (Ex. -o=/Users/roye/Desktop/output)")
+	x := flag.String("x", ".jpg", "Picture files extensions.")
 
-	o, err := os.Open(overlay)
-	if err != nil {
-		log.Fatalf("unable to open overlay image, %v", err)
-	}
-	defer o.Close()
+	flag.Parse()
 
-	w, err := os.Create(framed)
-	if err != nil {
-		log.Fatalf("unable to create watermarked file, %v", err)
-	}
-	defer w.Close()
+	c := make(chan string, 4)
 
-	err = addFrame(f, o, w)
-	if err != nil {
-		log.Fatalf("expected no error, got %v", err)
+	var wg sync.WaitGroup
+
+	go func() {
+		if err := scan(&wg, *s, c, *x); err != nil {
+			log.Fatalf("error scanning directory: %v", err)
+		}
+
+		wg.Wait()
+		close(c)
+	}()
+
+	// for v := range c {
+	// 	go func(s string) {
+	// 		fmt.Printf("\ncropping %s...", s)
+	// 		if err := crop(&wg, s, *o); err != nil {
+	// 			fmt.Printf("\nerror cropping picture: %v", err)
+	// 		} else {
+	// 			fmt.Printf("\n%s Done!", s)
+	// 		}
+	// 	}(v)
+	// }
+
+	for v := range c {
+		go func(s string) {
+			fmt.Printf("\nframing %s...", s)
+			if err := frame(&wg, s, *o); err != nil {
+				fmt.Printf("\nerror framing picture: %v", err)
+			} else {
+				fmt.Printf("\n%s Done!", s)
+			}
+		}(v)
 	}
+
+	fmt.Print("\n")
 }
