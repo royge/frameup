@@ -27,6 +27,9 @@ var (
 )
 
 func writeImage(img image.Image, name string) error {
+	dir := filepath.Dir(name)
+	os.MkdirAll(dir, os.ModePerm)
+
 	fso, err := os.Create(name)
 	if err != nil {
 		return err
@@ -43,6 +46,36 @@ func getOffset(img, overlay image.Image) image.Point {
 	top := float64(b.Y)*.5 - float64(o.Y)*.5
 	left := float64(b.X)*.5 - float64(o.X)*.5
 	return image.Pt(int(left), int(top))
+}
+
+func join(r, o io.Reader, w io.Writer) error {
+	img, err := jpeg.Decode(r)
+	if err != nil {
+		return fmt.Errorf("unable to decode jpeg image: %v", err)
+	}
+
+	overlay, err := png.Decode(o)
+	if err != nil {
+		return fmt.Errorf("unable to decode png image: %v", err)
+	}
+
+	// offset := getOffset(img, overlay)
+
+	b := img.Bounds()
+	m := image.NewRGBA(b)
+
+	draw.Draw(m, b, img, image.ZP, draw.Src)
+	draw.Draw(
+		m,
+		b,
+		overlay,
+		image.ZP,
+		draw.Over,
+	)
+
+	jpeg.Encode(w, m, &jpeg.Options{Quality: 100})
+
+	return nil
 }
 
 func addFrame(r, o io.Reader, w io.Writer) error {
@@ -159,23 +192,23 @@ func scanDir(wg *sync.WaitGroup, dir string, c chan string) error {
 	return nil
 }
 
-func crop(wg *sync.WaitGroup, s string, dir string) error {
-	defer wg.Done()
+func crop(s string, dir string, w, h int) error {
 	if s != "" {
 		r, err := os.Open(s)
 		if err != nil {
-			return fmt.Errorf("unable to open raw image, %v", err)
+			return fmt.Errorf("unable to open %s from %s, %v", s, dir, err)
 		}
 		defer r.Close()
 
 		name := filepath.Base(s)
-
+		fdir := filepath.Base(filepath.Dir(s))
 		p := path.Join(
 			dir,
-			name,
+			fdir,
+			fmt.Sprintf("%dx%d-%s", w, h, name),
 		)
 
-		if err := resizeAndCrop(r, 1200, 1800, p); err != nil {
+		if err := resizeAndCrop(r, w, h, p); err != nil {
 			return fmt.Errorf("unable to crop image, %v", err)
 		}
 	}
@@ -183,8 +216,7 @@ func crop(wg *sync.WaitGroup, s string, dir string) error {
 	return nil
 }
 
-func frame(wg *sync.WaitGroup, s string, dir string) error {
-	defer wg.Done()
+func frame(s string, dir string) error {
 	if s != "" {
 		f, err := os.Open(s)
 		if err != nil {
@@ -220,47 +252,90 @@ func frame(wg *sync.WaitGroup, s string, dir string) error {
 	return nil
 }
 
+type dimension struct {
+	Width  int
+	Height int
+}
+
 func main() {
-	s := flag.String("s", "", "Source directory. (Ex. -s=/Users/roye/Desktop/mypics)")
-	o := flag.String("o", "", "Output directory. (Ex. -o=/Users/roye/Desktop/output)")
-	x := flag.String("x", ".jpg", "Picture files extensions.")
+	src := flag.String("s", "", "Source directory. (Ex. -s=/Users/roye/Desktop/mypics)")
+	dst := flag.String("o", "", "Output directory. (Ex. -o=/Users/roye/Desktop/output)")
+	ext := flag.String("x", ".jpg", "Picture files extensions.")
 
 	flag.Parse()
 
-	c := make(chan string, 4)
+	var (
+		dirChan    = make(chan string, 4)
+		fileChan   = make(chan string, 4)
+		dirWg      sync.WaitGroup
+		fileWg     sync.WaitGroup
+		dimensions = []dimension{
+			dimension{500, 600},
+			dimension{300, 400},
+			dimension{400, 100},
+		}
+		done = false
+	)
 
-	var wg sync.WaitGroup
+	defer close(dirChan)
+	defer close(fileChan)
 
 	go func() {
-		if err := scan(&wg, *s, c, *x); err != nil {
-			log.Fatalf("error scanning directory: %v", err)
+		if err := scanDir(&dirWg, *src, dirChan); err != nil {
+			log.Fatalf("error scanning %s directory: %v", *src, err)
 		}
-
-		wg.Wait()
-		close(c)
 	}()
 
-	// for v := range c {
-	// 	go func(s string) {
-	// 		fmt.Printf("\ncropping %s...", s)
-	// 		if err := crop(&wg, s, *o); err != nil {
-	// 			fmt.Printf("\nerror cropping picture: %v", err)
-	// 		} else {
-	// 			fmt.Printf("\n%s Done!", s)
-	// 		}
-	// 	}(v)
-	// }
-
-	for v := range c {
-		go func(s string) {
-			fmt.Printf("\nframing %s...", s)
-			if err := frame(&wg, s, *o); err != nil {
-				fmt.Printf("\nerror framing picture: %v", err)
-			} else {
-				fmt.Printf("\n%s Done!", s)
+	for !done {
+		select {
+		case dir := <-dirChan:
+			if err := scan(&fileWg, dir, fileChan, *ext); err != nil {
+				log.Fatalf("error scanning %s directory: %v", dir, err)
 			}
-		}(v)
-	}
 
-	fmt.Print("\n")
+			// Done scanning 1 directory.
+			dirWg.Done()
+		case file := <-fileChan:
+			for _, v := range dimensions {
+				func(d dimension) {
+					if err := crop(file, *dst, d.Width, d.Height); err != nil {
+						fmt.Printf("error cropping picture file %s: %v", file, err)
+					}
+				}(v)
+			}
+
+			fileWg.Done()
+		case <-time.After(3 * time.Second):
+			done = true
+		}
+	}
+	fileWg.Wait()
+
+	// start stitching images.
+	done = false
+	go func() {
+		if err := scanDir(&dirWg, *dst, dirChan); err != nil {
+			log.Fatalf("error scanning %s directory: %v", *src, err)
+		}
+	}()
+
+	for !done {
+		select {
+		case dir := <-dirChan:
+			if err := scan(&fileWg, dir, fileChan, *ext); err != nil {
+				log.Fatalf("error scanning %s directory: %v", dir, err)
+			}
+
+			// Done scanning 1 directory.
+			dirWg.Done()
+		case file := <-fileChan:
+			// FIXME!
+			fmt.Println(file)
+
+			fileWg.Done()
+		case <-time.After(3 * time.Second):
+			done = true
+		}
+	}
+	fileWg.Wait()
 }

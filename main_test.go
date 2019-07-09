@@ -1,7 +1,8 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"os"
 	"sync"
 	"testing"
 
@@ -11,12 +12,13 @@ import (
 func TestScanDir(t *testing.T) {
 	var (
 		wg       sync.WaitGroup
-		inputDir = "./test/input/"
+		mu       sync.Mutex
+		inputDir = "./testdata/input/"
 		c        = make(chan string, 2)
 		expected = []string{
-			"test/input/folder1",
-			"test/input/folder2",
-			"test/input/folder3",
+			"testdata/input/folder1",
+			"testdata/input/folder2",
+			"testdata/input/folder3",
 		}
 		actual = []string{}
 		r      = require.New(t)
@@ -26,13 +28,15 @@ func TestScanDir(t *testing.T) {
 		defer close(c)
 		err := scanDir(&wg, inputDir, c)
 		if err != nil {
-			log.Fatalf("error scanning directory: %v", err)
+			t.Fatalf("error scanning directory: %v", err)
 		}
 	}()
 
 	for v := range c {
 		go func(s string) {
+			mu.Lock()
 			actual = append(actual, s)
+			mu.Unlock()
 			wg.Done()
 		}(v)
 	}
@@ -45,12 +49,13 @@ func TestScanDir(t *testing.T) {
 func TestScan(t *testing.T) {
 	var (
 		wg       sync.WaitGroup
-		dir      = "./test/input/folder1/"
+		mu       sync.Mutex
+		dir      = "./testdata/input/folder1/"
 		c        = make(chan string, 2)
 		expected = []string{
-			"test/input/folder1/file01.jpg",
-			"test/input/folder1/file02.jpg",
-			"test/input/folder1/file03.jpg",
+			"testdata/input/folder1/file01.jpg",
+			"testdata/input/folder1/file02.jpg",
+			"testdata/input/folder1/file03.jpg",
 		}
 		actual = []string{}
 		r      = require.New(t)
@@ -60,13 +65,15 @@ func TestScan(t *testing.T) {
 		defer close(c)
 		err := scan(&wg, dir, c, ".jpg")
 		if err != nil {
-			log.Fatalf("error scanning files: %v", err)
+			t.Fatalf("error scanning files: %v", err)
 		}
 	}()
 
 	for v := range c {
 		go func(s string) {
+			mu.Lock()
 			actual = append(actual, s)
+			mu.Unlock()
 			wg.Done()
 		}(v)
 	}
@@ -74,4 +81,24 @@ func TestScan(t *testing.T) {
 	wg.Wait()
 
 	r.Equal(expected, actual)
+}
+
+func TestCrop(t *testing.T) {
+	var (
+		dir      = "./testdata/output/"
+		s        = "./testdata/sub/sample.jpg"
+		r        = require.New(t)
+		w        = 200
+		h        = 150
+		expected = fmt.Sprintf("%ssub/%dx%d-sample.jpg", dir, w, h)
+	)
+
+	if err := crop(s, dir, w, h); err != nil {
+		t.Fatalf("error cropping image %s: %v", s, err)
+	}
+
+	_, err := os.Stat(expected)
+	r.Empty(err)
+
+	os.Remove(expected)
 }
