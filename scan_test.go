@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"sync"
 	"testing"
 
@@ -14,11 +12,13 @@ func TestScanDir(t *testing.T) {
 		wg       sync.WaitGroup
 		mu       sync.Mutex
 		inputDir = "./testdata/input/"
-		c        = make(chan string, 2)
+		c        = make(chan string, 1)
 		expected = []string{
 			"testdata/input/folder1",
 			"testdata/input/folder2",
 			"testdata/input/folder3",
+			"testdata/input/folder4",
+			"testdata/input/folder5",
 		}
 		actual = []string{}
 		r      = require.New(t)
@@ -51,7 +51,7 @@ func TestScan(t *testing.T) {
 		wg       sync.WaitGroup
 		mu       sync.Mutex
 		dir      = "./testdata/input/folder1/"
-		c        = make(chan string, 2)
+		c        = make(chan string, 1)
 		expected = []string{
 			"testdata/input/folder1/file01.jpg",
 			"testdata/input/folder1/file02.jpg",
@@ -81,24 +81,4 @@ func TestScan(t *testing.T) {
 	wg.Wait()
 
 	r.Equal(expected, actual)
-}
-
-func TestCrop(t *testing.T) {
-	var (
-		dir      = "./testdata/output/"
-		s        = "./testdata/sub/sample.jpg"
-		r        = require.New(t)
-		w        = 200
-		h        = 150
-		expected = fmt.Sprintf("%ssub/%dx%d-sample.jpg", dir, w, h)
-	)
-
-	if err := crop(s, dir, w, h); err != nil {
-		t.Fatalf("error cropping image %s: %v", s, err)
-	}
-
-	_, err := os.Stat(expected)
-	r.Empty(err)
-
-	os.Remove(expected)
 }
