@@ -12,15 +12,15 @@ import (
 	"path/filepath"
 )
 
-func frame(s string, dir string) error {
-	if s != "" {
-		f, err := os.Open(s)
+func frame(bg string, dir string, overlay string) error {
+	if bg != "" {
+		f, err := os.Open(bg)
 		if err != nil {
 			return fmt.Errorf("unable to open raw image, %v", err)
 		}
 		defer f.Close()
 
-		name := filepath.Base(s)
+		name := filepath.Base(bg)
 
 		p := path.Join(
 			dir,

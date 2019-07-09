@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 )
@@ -18,6 +19,25 @@ type dimension struct {
 	Height int
 }
 
+func classify(files []string, keys []string) map[string][]string {
+	m := map[string][]string{}
+	for _, v := range keys {
+		m[v] = []string{}
+	}
+
+	for _, v := range files {
+		func(file string) {
+			for i := range m {
+				if strings.Contains(file, i) {
+					m[i] = append(m[i], file)
+				}
+			}
+		}(v)
+	}
+
+	return m
+}
+
 func main() {
 	src := flag.String("s", "", "Source directory. (Ex. -s=/Users/roye/Desktop/mypics)")
 	dst := flag.String("o", "", "Output directory. (Ex. -o=/Users/roye/Desktop/output)")
@@ -26,8 +46,8 @@ func main() {
 	flag.Parse()
 
 	var (
-		inDirChan  = make(chan string, 1)
-		outDirChan = make(chan string, 1)
+		inDirChan  = make(chan string, 4)
+		outDirChan = make(chan string, 4)
 		dirWg      sync.WaitGroup
 		fileWg     sync.WaitGroup
 		dimensions = []dimension{
@@ -45,7 +65,7 @@ func main() {
 	}()
 
 	for v := range inDirChan {
-		c := make(chan string, 1)
+		c := make(chan string, 4)
 		go func(dir string) {
 			defer close(c)
 			if err := scan(&fileWg, dir, c, *ext); err != nil {
@@ -85,6 +105,9 @@ func main() {
 
 	for v := range outDirChan {
 		c := make(chan string, 1)
+		files := []string{}
+		mu := sync.Mutex{}
+
 		go func(dir string) {
 			defer close(c)
 			if err := scan(&fileWg, dir, c, *ext); err != nil {
@@ -92,12 +115,14 @@ func main() {
 			}
 		}(v)
 
-		for w := range c {
-			go func(file string) {
-				fileWg.Done()
-				fmt.Println("file:", file)
-			}(w)
+		for f := range c {
+			mu.Lock()
+			files = append(files, f)
+			mu.Unlock()
+			fileWg.Done()
 		}
+
+		fmt.Println(files)
 
 		fileWg.Wait()
 
