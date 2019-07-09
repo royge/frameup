@@ -12,7 +12,11 @@ import (
 	"path/filepath"
 )
 
-func frame(bg string, dir string, overlay string) error {
+func combine(count int) []int {
+	return nil
+}
+
+func frame(m map[string][]string, outDir string, bg string, overlay string) error {
 	if bg != "" {
 		f, err := os.Open(bg)
 		if err != nil {
@@ -23,7 +27,7 @@ func frame(bg string, dir string, overlay string) error {
 		name := filepath.Base(bg)
 
 		p := path.Join(
-			dir,
+			outDir,
 			name,
 		)
 

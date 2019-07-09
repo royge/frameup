@@ -122,7 +122,14 @@ func main() {
 			fileWg.Done()
 		}
 
-		fmt.Println(files)
+		keys := []string{
+			"500x600",
+			"300x400",
+			"400x100",
+		}
+		m := classify(files, keys)
+
+		fmt.Println(m)
 
 		fileWg.Wait()
 
