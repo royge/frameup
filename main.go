@@ -15,11 +15,11 @@ var (
 	bg      = "./assets/bg.jpg"
 	overlay = "./assets/overlay.png"
 	delay   = 100 * time.Millisecond
-	dims    = dimensions([]dimension{
-		dimension{500, 600},
-		dimension{300, 400},
-		dimension{400, 100},
-	})
+	dims    = []string{
+		"500x600",
+		"300x400",
+		"400x100",
+	}
 )
 
 type dimension struct {
@@ -114,12 +114,13 @@ func main() {
 			for w := range c {
 				go func(file string) {
 
-					for _, d := range dims {
+					for _, v := range dims {
+						d, _ := parseDimension(v)
 						func(d dimension) {
 							if err := crop(file, *dst, d.Width, d.Height); err != nil {
 								fmt.Printf("error cropping picture file %s: %v", file, err)
 							}
-						}(d)
+						}(*d)
 					}
 
 					fileWg.Done()
@@ -160,7 +161,7 @@ func main() {
 				fileWg.Done()
 			}
 
-			m := classify(files, dims.Keys())
+			m := classify(files, dims)
 			err := frame(m, *dst, bg, overlay)
 			if err != nil {
 				log.Fatalf("error creating frame: %v", err)

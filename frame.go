@@ -19,11 +19,29 @@ func frame(m map[string]string, outDir string, bg string, overlay string) error 
 	}
 	defer f.Close()
 
-	name := filepath.Base(bg)
+	name := ""
+	iom := map[string]io.Reader{}
+
+	for i, v := range m {
+		o, err := os.Open(v)
+		if err != nil {
+			return fmt.Errorf("unable to open %s image, %v", i, err)
+		}
+		defer o.Close()
+		iom[i] = o
+
+		if name == "" {
+			name = filepath.Base(filepath.Dir(v))
+		}
+	}
+
+	if name == "" {
+		return fmt.Errorf("empty output file name")
+	}
 
 	p := path.Join(
 		outDir,
-		name,
+		name+".jpg",
 	)
 
 	o, err := os.Open(overlay)
@@ -37,17 +55,6 @@ func frame(m map[string]string, outDir string, bg string, overlay string) error 
 		return fmt.Errorf("unable to create watermarked file, %v", err)
 	}
 	defer w.Close()
-
-	iom := map[string]io.Reader{}
-
-	for i, v := range m {
-		o, err := os.Open(v)
-		if err != nil {
-			return fmt.Errorf("unable to open overlay image, %v", err)
-		}
-		defer o.Close()
-		iom[i] = o
-	}
 
 	err = addFrame(iom, f, o, w)
 	if err != nil {
@@ -75,7 +82,8 @@ func addFrame(m map[string]io.Reader, bg, ol io.Reader, w io.Writer) error {
 
 	pt := image.ZP
 
-	for k, v := range m {
+	for _, k := range dims {
+		v := m[k]
 		img, err := jpeg.Decode(v)
 		if err != nil {
 			return fmt.Errorf("unable to decode jpeg image: %v", err)
