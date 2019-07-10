@@ -17,8 +17,8 @@ var (
 	delay   = 100 * time.Millisecond
 	dims    = []string{
 		"500x600",
-		"300x400",
-		"400x100",
+		"467x467",
+		"555x555",
 	}
 )
 
