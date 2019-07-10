@@ -12,111 +12,91 @@ import (
 	"path/filepath"
 )
 
-func combine(count int) []int {
-	return nil
-}
+func frame(m map[string]string, outDir string, bg string, overlay string) error {
+	f, err := os.Open(bg)
+	if err != nil {
+		return fmt.Errorf("unable to open raw image, %v", err)
+	}
+	defer f.Close()
 
-func frame(m map[string][]string, outDir string, bg string, overlay string) error {
-	if bg != "" {
-		f, err := os.Open(bg)
-		if err != nil {
-			return fmt.Errorf("unable to open raw image, %v", err)
-		}
-		defer f.Close()
+	name := filepath.Base(bg)
 
-		name := filepath.Base(bg)
+	p := path.Join(
+		outDir,
+		name,
+	)
 
-		p := path.Join(
-			outDir,
-			name,
-		)
+	o, err := os.Open(overlay)
+	if err != nil {
+		return fmt.Errorf("unable to open overlay image, %v", err)
+	}
+	defer o.Close()
 
-		o, err := os.Open(overlay)
+	w, err := os.Create(p)
+	if err != nil {
+		return fmt.Errorf("unable to create watermarked file, %v", err)
+	}
+	defer w.Close()
+
+	iom := map[string]io.Reader{}
+
+	for i, v := range m {
+		o, err := os.Open(v)
 		if err != nil {
 			return fmt.Errorf("unable to open overlay image, %v", err)
 		}
 		defer o.Close()
+		iom[i] = o
+	}
 
-		w, err := os.Create(p)
-		if err != nil {
-			return fmt.Errorf("unable to create watermarked file, %v", err)
-		}
-		defer w.Close()
-
-		err = addFrame(f, o, w)
-		if err != nil {
-			return fmt.Errorf("expected no error, got %v", err)
-		}
+	err = addFrame(iom, f, o, w)
+	if err != nil {
+		return fmt.Errorf("expected no error, got %v", err)
 	}
 
 	return nil
 }
 
-func addFrame(r, o io.Reader, w io.Writer) error {
-	img, err := jpeg.Decode(r)
+func addFrame(m map[string]io.Reader, bg, ol io.Reader, w io.Writer) error {
+	img, err := jpeg.Decode(bg)
 	if err != nil {
 		return fmt.Errorf("unable to decode jpeg image: %v", err)
 	}
 
-	overlay, err := png.Decode(o)
+	overlay, err := png.Decode(ol)
 	if err != nil {
 		return fmt.Errorf("unable to decode png image: %v", err)
 	}
 
-	// offset := getOffset(img, overlay)
-
 	b := img.Bounds()
-	m := image.NewRGBA(b)
+	ib := image.NewRGBA(b)
 
-	draw.Draw(m, b, img, image.ZP, draw.Src)
-	draw.Draw(
-		m,
-		b,
-		overlay,
-		image.ZP,
-		draw.Over,
-	)
+	draw.Draw(ib, b, img, image.ZP, draw.Src)
 
-	jpeg.Encode(w, m, &jpeg.Options{Quality: 100})
+	pt := image.ZP
 
-	return nil
-}
+	for k, v := range m {
+		img, err := jpeg.Decode(v)
+		if err != nil {
+			return fmt.Errorf("unable to decode jpeg image: %v", err)
+		}
 
-func getOffset(img, overlay image.Image) image.Point {
-	b := img.Bounds().Max
-	o := overlay.Bounds().Max
+		fmt.Println(pt)
+		draw.Draw(ib, b, img, pt, draw.Over)
 
-	top := float64(b.Y)*.5 - float64(o.Y)*.5
-	left := float64(b.X)*.5 - float64(o.X)*.5
-	return image.Pt(int(left), int(top))
-}
+		dim, err := parseDimension(k)
+		if err != nil {
+			return fmt.Errorf("unable to parse dimension %s: %v", k, err)
+		}
 
-func join(r, o io.Reader, w io.Writer) error {
-	img, err := jpeg.Decode(r)
-	if err != nil {
-		return fmt.Errorf("unable to decode jpeg image: %v", err)
+		fmt.Println(dim)
+
+		pt = image.Pt(0, pt.Y-dim.Height)
 	}
 
-	overlay, err := png.Decode(o)
-	if err != nil {
-		return fmt.Errorf("unable to decode png image: %v", err)
-	}
+	draw.Draw(ib, b, overlay, image.ZP, draw.Over)
 
-	// offset := getOffset(img, overlay)
-
-	b := img.Bounds()
-	m := image.NewRGBA(b)
-
-	draw.Draw(m, b, img, image.ZP, draw.Src)
-	draw.Draw(
-		m,
-		b,
-		overlay,
-		image.ZP,
-		draw.Over,
-	)
-
-	jpeg.Encode(w, m, &jpeg.Options{Quality: 100})
+	jpeg.Encode(w, ib, &jpeg.Options{Quality: 100})
 
 	return nil
 }
