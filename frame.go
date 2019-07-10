@@ -10,6 +10,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/BurntSushi/graphics-go/graphics"
 )
 
 func frame(m map[string]string, outDir string, bg string, overlay string) error {
@@ -90,7 +92,10 @@ func addFrame(m map[string]io.Reader, bg, ol io.Reader, w io.Writer) error {
 		}
 
 		fmt.Println(pt)
-		draw.Draw(ib, b, img, pt, draw.Over)
+		b2 := img.Bounds()
+		dstImage := image.NewRGBA(image.Rect(0, 0, b2.Dy()*2, b2.Dx()*2))
+		graphics.Rotate(dstImage, img, &graphics.RotateOptions{Angle: 100})
+		draw.Draw(ib, b, dstImage, pt, draw.Over)
 
 		dim, err := parseDimension(k)
 		if err != nil {
