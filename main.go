@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"image"
 	"log"
 	"strconv"
 	"strings"
@@ -16,9 +17,14 @@ var (
 	overlay = "./assets/overlay.png"
 	delay   = 100 * time.Millisecond
 	dims    = []string{
-		"500x600",
-		"467x467",
-		"555x555",
+		"1200x1800",
+		"460x920",
+		"460x880",
+	}
+	locations = map[string]image.Point{
+		"1200x1800": image.Pt(-150, 0),
+		"460x920":   image.Pt(0, -880),
+		"460x880":   image.Pt(0, 0),
 	}
 )
 
