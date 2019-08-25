@@ -1,7 +1,7 @@
 package framer
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -27,7 +27,7 @@ func (s *Scanner) Scan(wg *sync.WaitGroup, dir string, c chan string, exts strin
 			if ok, _ := exists(p); ok {
 				wg.Add(1)
 				c <- path.Join(dir, info.Name())
-				fmt.Println(info.Name())
+				log.Println(info.Name())
 			}
 			time.Sleep(s.Delay)
 		}
