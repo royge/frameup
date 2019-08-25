@@ -14,8 +14,8 @@ func init() {
 
 var cropCmd = &cobra.Command{
 	Use:   "crop",
-	Short: "Crop selected pictures.",
-	Long:  "Crop selected pictures.",
+	Short: "Crop selected pictures inside the source directory.",
+	Long:  "Crop selected pictures inside the source directory.",
 	Run: func(cmd *cobra.Command, args []string) {
 		scanner := framer.Scanner{Delay: delay}
 

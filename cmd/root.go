@@ -52,9 +52,9 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&src, "source", "s", "", "Source directory.")
-	rootCmd.Flags().StringVarP(&dst, "output", "o", "", "Output directory.")
-	rootCmd.Flags().StringVarP(&ext, "ext", "e", ".jpg", "Picture files allowed extensions.")
+	rootCmd.PersistentFlags().StringVarP(&src, "source", "s", "", "Source directory.")
+	rootCmd.PersistentFlags().StringVarP(&dst, "output", "o", "", "Output directory.")
+	rootCmd.PersistentFlags().StringVarP(&ext, "ext", "e", ".jpg", "Picture files allowed extensions.")
 
 	rootCmd.MarkFlagRequired("source")
 	rootCmd.MarkFlagRequired("output")

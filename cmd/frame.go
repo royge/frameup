@@ -14,8 +14,8 @@ func init() {
 
 var frameCmd = &cobra.Command{
 	Use:   "frame",
-	Short: "Create frame selected pictures.",
-	Long:  "Create frame selected pictures.",
+	Short: "Create frame on selected pictures inside source directory.",
+	Long:  "Create frame on selected pictures inside source directory.",
 	Run: func(cmd *cobra.Command, args []string) {
 		scnr := framer.Scanner{Delay: delay}
 		fmr := framer.Framer{
