@@ -1,6 +1,7 @@
 package framer
 
 import (
+	"sort"
 	"sync"
 	"testing"
 
@@ -44,6 +45,9 @@ func TestScanDir(t *testing.T) {
 
 	wg.Wait()
 
+	sort.Strings(expected)
+	sort.Strings(actual)
+
 	r.Equal(expected, actual)
 }
 
@@ -81,6 +85,9 @@ func TestScan(t *testing.T) {
 	}
 
 	wg.Wait()
+
+	sort.Strings(expected)
+	sort.Strings(actual)
 
 	r.Equal(expected, actual)
 }
