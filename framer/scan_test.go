@@ -1,4 +1,4 @@
-package main
+package framer
 
 import (
 	"sync"
@@ -11,22 +11,23 @@ func TestScanDir(t *testing.T) {
 	var (
 		wg       sync.WaitGroup
 		mu       sync.Mutex
-		inputDir = "./testdata/input/"
+		inputDir = "../testdata/input/"
 		c        = make(chan string, 1)
 		expected = []string{
-			"testdata/input/folder1",
-			"testdata/input/folder2",
-			"testdata/input/folder3",
-			"testdata/input/folder4",
-			"testdata/input/folder5",
+			"../testdata/input/folder1",
+			"../testdata/input/folder2",
+			"../testdata/input/folder3",
+			"../testdata/input/folder4",
+			"../testdata/input/folder5",
 		}
-		actual = []string{}
-		r      = require.New(t)
+		actual  = []string{}
+		r       = require.New(t)
+		scanner = Scanner{}
 	)
 
 	go func() {
 		defer close(c)
-		err := scanDir(&wg, inputDir, c)
+		err := scanner.ScanDir(&wg, inputDir, c)
 		if err != nil {
 			t.Fatalf("error scanning directory: %v", err)
 		}
@@ -50,20 +51,21 @@ func TestScan(t *testing.T) {
 	var (
 		wg       sync.WaitGroup
 		mu       sync.Mutex
-		dir      = "./testdata/input/folder1/"
+		dir      = "../testdata/input/folder1/"
 		c        = make(chan string, 1)
 		expected = []string{
-			"testdata/input/folder1/file01.jpg",
-			"testdata/input/folder1/file02.jpg",
-			"testdata/input/folder1/file03.jpg",
+			"../testdata/input/folder1/file01.jpg",
+			"../testdata/input/folder1/file02.jpg",
+			"../testdata/input/folder1/file03.jpg",
 		}
-		actual = []string{}
-		r      = require.New(t)
+		actual  = []string{}
+		r       = require.New(t)
+		scanner = Scanner{}
 	)
 
 	go func() {
 		defer close(c)
-		err := scan(&wg, dir, c, ".jpg")
+		err := scanner.Scan(&wg, dir, c, ".jpg")
 		if err != nil {
 			t.Fatalf("error scanning files: %v", err)
 		}

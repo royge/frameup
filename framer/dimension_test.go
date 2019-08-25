@@ -1,4 +1,4 @@
-package main
+package framer
 
 import (
 	"testing"
@@ -25,17 +25,17 @@ func TestClassify(t *testing.T) {
 		"150x105": "qwerty/12345/150x105-test.jpg",
 	}
 
-	actual := classify(input, keys)
+	actual := Classify(input, keys)
 	r.Equal(expected, actual)
 }
 
 func TestDimensionsKeys(t *testing.T) {
 	r := require.New(t)
 
-	dims := dimensions([]dimension{
-		dimension{500, 600},
-		dimension{300, 400},
-		dimension{400, 100},
+	dims := Dimensions([]Dimension{
+		Dimension{500, 600},
+		Dimension{300, 400},
+		Dimension{400, 100},
 	})
 
 	expected := []string{
@@ -51,20 +51,20 @@ func TestDimensionsKeys(t *testing.T) {
 func TestParseDimension(t *testing.T) {
 	r := require.New(t)
 
-	dim, err := parseDimension("100x200")
+	dim, err := ParseDimension("100x200")
 	r.Empty(err)
 	r.Equal(100, dim.Width)
 	r.Equal(200, dim.Height)
 
-	dim, err = parseDimension("100by200")
+	dim, err = ParseDimension("100by200")
 	r.NotEmpty(err)
 
-	dim, err = parseDimension("100-200")
+	dim, err = ParseDimension("100-200")
 	r.NotEmpty(err)
 
-	dim, err = parseDimension("100x")
+	dim, err = ParseDimension("100x")
 	r.NotEmpty(err)
 
-	dim, err = parseDimension("x100")
+	dim, err = ParseDimension("x100")
 	r.NotEmpty(err)
 }

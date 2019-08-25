@@ -1,4 +1,4 @@
-package main
+package framer
 
 import (
 	"fmt"
@@ -10,15 +10,15 @@ import (
 
 func TestCrop(t *testing.T) {
 	var (
-		dir      = "./testdata/output/"
-		s        = "./testdata/sub/sample.jpg"
+		dir      = "../testdata/output/"
+		s        = "../testdata/sub/sample.jpg"
 		r        = require.New(t)
 		w        = 200
 		h        = 150
 		expected = fmt.Sprintf("%ssub/%dx%d-sample.jpg", dir, w, h)
 	)
 
-	if err := crop(s, dir, w, h); err != nil {
+	if err := Crop(s, dir, w, h); err != nil {
 		t.Fatalf("error cropping image %s: %v", s, err)
 	}
 

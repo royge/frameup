@@ -1,4 +1,4 @@
-package main
+package framer
 
 import (
 	"fmt"
@@ -10,7 +10,13 @@ import (
 	"time"
 )
 
-func scan(wg *sync.WaitGroup, dir string, c chan string, exts string) error {
+// Scanner of directory files.
+type Scanner struct {
+	Delay time.Duration
+}
+
+// Scan directory for picture files.
+func (s *Scanner) Scan(wg *sync.WaitGroup, dir string, c chan string, exts string) error {
 	err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -23,7 +29,7 @@ func scan(wg *sync.WaitGroup, dir string, c chan string, exts string) error {
 				c <- path.Join(dir, info.Name())
 				fmt.Println(info.Name())
 			}
-			time.Sleep(delay)
+			time.Sleep(s.Delay)
 		}
 
 		return nil
@@ -47,7 +53,8 @@ func exists(path string) (bool, error) {
 	return true, err
 }
 
-func scanDir(wg *sync.WaitGroup, dir string, c chan string) error {
+// ScanDir search for sub directories.
+func (s *Scanner) ScanDir(wg *sync.WaitGroup, dir string, c chan string) error {
 	err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -59,7 +66,7 @@ func scanDir(wg *sync.WaitGroup, dir string, c chan string) error {
 				wg.Add(1)
 				c <- path.Join(dir, info.Name())
 			}
-			time.Sleep(delay)
+			time.Sleep(s.Delay)
 		}
 
 		return nil

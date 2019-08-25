@@ -1,4 +1,4 @@
-package main
+package framer
 
 import (
 	"fmt"
@@ -12,8 +12,17 @@ import (
 	"path/filepath"
 )
 
-func frame(m map[string]string, outDir string, bg string, overlay string) error {
-	f, err := os.Open(bg)
+// Framer type.
+type Framer struct {
+	Dims      []string
+	Locations map[string]image.Point
+	Bg        string
+	Overlay   string
+}
+
+// Frame pictures inside selected directory.
+func (fr *Framer) Frame(m map[string]string, outDir string) error {
+	f, err := os.Open(fr.Bg)
 	if err != nil {
 		return fmt.Errorf("unable to open raw image, %v", err)
 	}
@@ -44,7 +53,7 @@ func frame(m map[string]string, outDir string, bg string, overlay string) error 
 		name+".jpg",
 	)
 
-	o, err := os.Open(overlay)
+	o, err := os.Open(fr.Overlay)
 	if err != nil {
 		return fmt.Errorf("unable to open overlay image, %v", err)
 	}
@@ -56,7 +65,7 @@ func frame(m map[string]string, outDir string, bg string, overlay string) error 
 	}
 	defer w.Close()
 
-	err = addFrame(iom, f, o, w)
+	err = addFrame(fr, iom, f, o, w)
 	if err != nil {
 		return fmt.Errorf("expected no error, got %v", err)
 	}
@@ -64,7 +73,7 @@ func frame(m map[string]string, outDir string, bg string, overlay string) error 
 	return nil
 }
 
-func addFrame(m map[string]io.Reader, bg, ol io.Reader, w io.Writer) error {
+func addFrame(fr *Framer, m map[string]io.Reader, bg, ol io.Reader, w io.Writer) error {
 	img, err := jpeg.Decode(bg)
 	if err != nil {
 		return fmt.Errorf("unable to decode jpeg image: %v", err)
@@ -80,14 +89,14 @@ func addFrame(m map[string]io.Reader, bg, ol io.Reader, w io.Writer) error {
 
 	draw.Draw(ib, b, img, image.ZP, draw.Src)
 
-	for _, k := range dims {
+	for _, k := range fr.Dims {
 		v := m[k]
 		img, err := jpeg.Decode(v)
 		if err != nil {
 			return fmt.Errorf("unable to decode jpeg image: %v", err)
 		}
 
-		draw.Draw(ib, b, img, locations[k], draw.Over)
+		draw.Draw(ib, b, img, fr.Locations[k], draw.Over)
 	}
 
 	draw.Draw(ib, b, overlay, image.ZP, draw.Over)

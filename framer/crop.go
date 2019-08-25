@@ -1,4 +1,4 @@
-package main
+package framer
 
 import (
 	"fmt"
@@ -13,7 +13,8 @@ import (
 	"github.com/nfnt/resize"
 )
 
-func crop(s string, dir string, w, h int) error {
+// Crop pictures inside a directory.
+func Crop(s string, dir string, w, h int) error {
 	if s != "" {
 		r, err := os.Open(s)
 		if err != nil {
