@@ -33,7 +33,7 @@ var frameCmd = &cobra.Command{
 
 		go func() {
 			defer close(outDirChan)
-			if err := scnr.ScanDir(&dirWg, dst, outDirChan); err != nil {
+			if err := scnr.ScanDir(&dirWg, src, outDirChan); err != nil {
 				log.Fatalf("error scanning %s directory: %v", src, err)
 			}
 		}()

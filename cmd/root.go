@@ -50,8 +50,8 @@ var rootCmd = &cobra.Command{
 func configure() {
 	d := viper.Get("dimensions").([]interface{})
 	dims = make(dimensions, len(d))
-	for _, v := range d {
-		dims = append(dims, v.(string))
+	for i, v := range d {
+		dims[i] = v.(string)
 	}
 
 	l := viper.Get("locations").(map[string]interface{})
@@ -79,7 +79,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&dst, "output", "o", "", "Output directory.")
 	rootCmd.PersistentFlags().StringVarP(&ext, "ext", "e", ".jpg", "Picture files allowed extensions.")
 	rootCmd.PersistentFlags().StringVarP(&bg, "bg", "b", "./assets/bg.jpg", "Background image.")
-	rootCmd.PersistentFlags().StringVarP(&overlay, "overlay", "l", "./assets/overlay.jpg", "Overlay or frame image.")
+	rootCmd.PersistentFlags().StringVarP(&overlay, "overlay", "l", "./assets/overlay.png", "Overlay or frame image.")
 	rootCmd.PersistentFlags().Int64VarP(&delay, "delay", "d", 100, "Delay.")
 
 	rootCmd.MarkFlagRequired("source")
