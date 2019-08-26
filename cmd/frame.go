@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"image"
 	"log"
 	"sync"
 	"time"
@@ -18,6 +19,10 @@ var frameCmd = &cobra.Command{
 	Short: "Create frame on selected pictures inside source directory.",
 	Long:  "Create frame on selected pictures inside source directory.",
 	Run: func(cmd *cobra.Command, args []string) {
+		locations := map[string]image.Point{}
+		for k, v := range locs {
+			locations[k] = image.Pt(int(v.Top), int(v.Left))
+		}
 		scnr := framer.Scanner{Delay: time.Duration(delay) * time.Millisecond}
 		fmr := framer.Framer{
 			Dims:      dims,

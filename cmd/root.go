@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"image"
 	"log"
 	"os"
 	"sync"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -16,16 +16,8 @@ var (
 
 	delay int64
 
-	dims = []string{
-		"1200x1800",
-		"460x920",
-		"460x880",
-	}
-	locations = map[string]image.Point{
-		"1200x1800": image.Pt(-160, 0),
-		"460x920":   image.Pt(0, -880),
-		"460x880":   image.Pt(0, 0),
-	}
+	dims = dimensions{}
+	locs = locations{}
 
 	inDirChan  = make(chan string, 4)
 	outDirChan = make(chan string, 4)
@@ -38,6 +30,14 @@ var (
 	ext string
 )
 
+type dimensions []string
+type locations map[string]location
+
+type location struct {
+	Top  float64
+	Left float64
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "frameup",
 	Short: "Crop and create frame to selected pictures.",
@@ -47,8 +47,27 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+func configure() {
+	d := viper.Get("dimensions").([]interface{})
+	dims = make(dimensions, len(d))
+	for _, v := range d {
+		dims = append(dims, v.(string))
+	}
+
+	l := viper.Get("locations").(map[string]interface{})
+	for k, v := range l {
+		loc := v.(map[string]interface{})
+		locs[k] = location{
+			Top:  loc["top"].(float64),
+			Left: loc["left"].(float64),
+		}
+	}
+}
+
 // Execute commands.
 func Execute() {
+	configure()
+
 	if err := rootCmd.Execute(); err != nil {
 		log.Println(err)
 		os.Exit(1)
