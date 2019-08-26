@@ -3,6 +3,7 @@ package cmd
 import (
 	"log"
 	"sync"
+	"time"
 
 	"github.com/royge/frameup/framer"
 	"github.com/spf13/cobra"
@@ -17,7 +18,7 @@ var frameCmd = &cobra.Command{
 	Short: "Create frame on selected pictures inside source directory.",
 	Long:  "Create frame on selected pictures inside source directory.",
 	Run: func(cmd *cobra.Command, args []string) {
-		scnr := framer.Scanner{Delay: delay}
+		scnr := framer.Scanner{Delay: time.Duration(delay) * time.Millisecond}
 		fmr := framer.Framer{
 			Dims:      dims,
 			Locations: locations,

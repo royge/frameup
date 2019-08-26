@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/royge/frameup/framer"
 	"github.com/spf13/cobra"
@@ -17,7 +18,7 @@ var cropCmd = &cobra.Command{
 	Short: "Crop selected pictures inside the source directory.",
 	Long:  "Crop selected pictures inside the source directory.",
 	Run: func(cmd *cobra.Command, args []string) {
-		scanner := framer.Scanner{Delay: delay}
+		scanner := framer.Scanner{Delay: time.Duration(delay) * time.Millisecond}
 
 		go func() {
 			defer close(inDirChan)
