@@ -43,7 +43,7 @@ Create custom frame or overlay PNG image to selected pictures
 
 	$ frameup crop -s ./demo/raw/ -o ./demo/cropped
 
-  Go to the `./demo/cropped` directory and removed the bad cuts. Only keep one
+  Go to the `./demo/cropped` directory and remove the bad cuts. Only keep one
   for every dimension.
 
 	$ frameup frame -s ./demo/cropped -o ./demo/final
