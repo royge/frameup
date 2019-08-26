@@ -3,6 +3,8 @@
 crop
 frame
 assets/
+!assets/bg.jpg
+!assets/overlay.jpg
 frameup
 output/
 ewa2019/
