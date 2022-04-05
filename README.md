@@ -1,6 +1,6 @@
 # frameup
 
-[![Build Status](https://travis-ci.org/royge/frameup.svg?branch=master)](https://travis-ci.org/royge/frameup)
+[![Go](https://github.com/royge/frameup/actions/workflows/go.yml/badge.svg)](https://github.com/royge/frameup/actions/workflows/go.yml)
 
 Create custom frame or overlay PNG image to selected pictures
 
