@@ -1,6 +1,7 @@
 # frameup
 
 [![Go](https://github.com/royge/frameup/actions/workflows/go.yml/badge.svg)](https://github.com/royge/frameup/actions/workflows/go.yml)
+[![Report](https://goreportcard.com/badge/github.com/royge/frameup)](https://goreportcard.com/report/github.com/royge/frameup)
 
 Create custom frame or overlay PNG image to selected pictures
 
