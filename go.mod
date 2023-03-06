@@ -12,7 +12,5 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.4.0
-	golang.org/x/image v0.0.0-20190823064033-3a9bac650e44 // indirect
-	golang.org/x/sys v0.0.0-20190825160603-fb81701db80f // indirect
-	golang.org/x/text v0.3.2 // indirect
+	golang.org/x/image v0.5.0 // indirect
 )
